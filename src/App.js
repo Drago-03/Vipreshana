@@ -6,6 +6,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { ThemeProvider } from './context/ThemeContext';
 import Loader from './components/Loader';
 import { AuthProvider } from './context/AuthContext';
+import Footer from './components/Footer';
 import Dashboard from './Dashboard';
 import About from './About';
 import HowItWorks from './Howitworks';
@@ -144,6 +145,7 @@ function App() {
             {loading ? <Loader /> : <AppRoutes />}
           </AuthSecurityHandler>
         </Router>
+        <Footer />
       </ThemeProvider>
     </AuthProvider>
   );

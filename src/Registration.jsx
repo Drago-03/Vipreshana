@@ -490,7 +490,6 @@ const RegistrationForm = () => {
                                 </div>
                             )}
                         </button>
-
                         <div className="text-center pt-4 border-t border-gray-100">
                             <p className="text-sm text-gray-600">
                                 Already have an account?{' '}

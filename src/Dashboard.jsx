@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useTheme } from './context/ThemeContext'; 
 import { useAuth } from './context/AuthContext';
-import Navbar from './components/Navbar';
 import { Link } from 'react-router-dom';
+import Navbar from './components/Navbar'; // Import Navbar
+import FAQSection from './components/FAQs'; //importing faq section
 
 const Dashboard = () => {
     const { theme } = useTheme();
@@ -106,7 +107,9 @@ const Dashboard = () => {
                         </div>
                     </div>
                 </div>
+                
             </div>
+            <FAQSection isDark={isDark} />
         </>
     );
 };
