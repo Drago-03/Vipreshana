@@ -4,15 +4,23 @@ const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://zvqdjuaslcaei
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2cWRqdWFzbGNhZWl6Z3RhZ2p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAwNjIxNDksImV4cCI6MjA2NTYzODE0OX0.grkFwyT_4OXSMknGWG3ytxOUUbHhSuBD_y1rIsmNLo8'
 
 // Debug logging
+console.log('Initializing Supabase client with:')
 console.log('Supabase URL:', supabaseUrl)
-console.log('Supabase Key (first 20 chars):', supabaseAnonKey.substring(0, 20) + '...')
+console.log('Supabase Key (first 10 chars):', supabaseAnonKey.substring(0, 10) + '...')
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    redirectTo: window.location.origin,
+    redirectTo: window.location.origin + '/auth/callback',
     persistSession: true,
     autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.localStorage
   },
+})
+
+// Test the connection and log the result
+supabase.auth.onAuthStateChange((event, session) => {
+  console.log('Supabase auth event:', event)
 })
 
 // Backend API base URL 
@@ -246,6 +254,7 @@ export const signInWithGoogle = async () => {
     // Use callback URL first, which will handle redirecting to dashboard
     const redirectUrl = `${window.location.origin}/auth/callback`;
     
+    console.log('Google OAuth login started');
     console.log('OAuth redirect URL:', redirectUrl);
     
     const { data, error } = await supabase.auth.signInWithOAuth({
@@ -260,7 +269,12 @@ export const signInWithGoogle = async () => {
       }
     })
     
-    if (error) throw error
+    if (error) {
+      console.error('Error with Google sign in:', error);
+      throw error;
+    }
+    
+    console.log('Google sign in initiated successfully');
     return { success: true, data }
   } catch (error) {
     console.error('Error with Google sign in:', error)
@@ -268,19 +282,45 @@ export const signInWithGoogle = async () => {
   }
 }
 
-// Sign out
 export const signOut = async () => {
   try {
-    const { error } = await supabase.auth.signOut()
-    if (error) throw error
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) {
+      console.error('Error signing out:', error);
+      throw error;
+    }
+    
+    console.log('User signed out successfully');
     return { success: true }
   } catch (error) {
-    console.error('Error signing out:', error)
+    console.error('Error signing out:', error);
     return { success: false, error: error.message }
   }
 }
 
-// Get current user
 export const getCurrentUser = () => {
   return supabase.auth.getUser()
+}
+
+// Export a direct sign in function for username/password auth
+export const signInWithEmail = async (email, password) => {
+  try {
+    console.log('Attempting to sign in with email:', email);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      console.error('Supabase sign in error:', error);
+      throw error;
+    }
+
+    console.log('Successfully signed in with email');
+    return { success: true, user: data.user, session: data.session }
+  } catch (error) {
+    console.error('Error with email sign in:', error);
+    return { success: false, error: error.message }
+  }
 }

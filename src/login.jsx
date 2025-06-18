@@ -4,7 +4,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useTheme } from './context/ThemeContext';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { supabase, sendOTP, verifyOTP, signInWithGoogle } from './lib/supabase';
+import { supabase, sendOTP, verifyOTP, signInWithGoogle, signInWithEmail } from './lib/supabase';
 
 const Login = () => {
   const [loginMethod, setLoginMethod] = useState('email'); // 'email' or 'phone'
@@ -81,25 +81,26 @@ const Login = () => {
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleLogin = async () => {
     try {
-      setIsLoading(true);
-      const { data, error } = await signInWithGoogle();
+      console.log("Starting Google OAuth flow...");
+      const { success, data, error } = await signInWithGoogle();
       
-      if (error) throw error;
+      if (!success) {
+        throw new Error(error);
+      }
       
-      toast.success('Signing in with Google...', {
-        position: 'top-center',
-        autoClose: 1500
+      toast.info("Redirecting to Google for login...", {
+        position: "top-center",
+        autoClose: 2000
       });
       
-      // OAuth will handle the redirect to dashboard now
+      // No need to redirect here, Supabase handles it
     } catch (error) {
-      console.error('Google sign-in error:', error);
-      toast.error(`Google sign-in failed: ${error.message || 'Please try again'}`, {
-        position: 'top-center'
+      console.error("Google login error:", error);
+      toast.error(`Google login failed: ${error.message}`, {
+        position: "top-center"
       });
-      setIsLoading(false);
     }
   };
   const handleSubmit = async (e) => {
@@ -107,13 +108,17 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      if (loginMethod === 'email') {        // Email/Password login
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: formData.email,
-          password: formData.password,
-        });
+      if (loginMethod === 'email') {        
+        // Email/Password login using our new direct function
+        console.log("Attempting login with email:", formData.email);
+        const { success, user, error } = await signInWithEmail(
+          formData.email,
+          formData.password
+        );
 
-        if (error) throw error;
+        if (!success) {
+          throw new Error(error || "Login failed");
+        }
 
         toast.success('🎉 Login successful!', {
           toastId: 'login-success',
@@ -129,6 +134,7 @@ const Login = () => {
           },
         });
 
+        console.log("Login successful - redirecting to dashboard");
         localStorage.setItem('userEmail', formData.email);
         setTimeout(() => {
           setIsLoading(false);
@@ -406,7 +412,7 @@ const Login = () => {
             <div className="flex justify-center space-x-4">
               <button
                 type="button"
-                onClick={handleGoogleSignIn}
+                onClick={handleGoogleLogin}
                 className={`flex items-center justify-center px-4 py-2 rounded-lg transition-all ${
                   isDark
                     ? 'bg-white text-gray-800 hover:bg-gray-100'

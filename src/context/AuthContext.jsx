@@ -9,6 +9,7 @@ export const useAuth = () => {
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
+  console.log('useAuth hook called, isAuthenticated:', context.isAuthenticated);
   return context;
 };
 
@@ -37,12 +38,14 @@ export const AuthProvider = ({ children }) => {
   };
   
   useEffect(() => {
+    console.log('AuthProvider mounted');
     // Clean URL immediately on component mount
     cleanUrlOfTokens();
     
     // Get initial session
     const getInitialSession = async () => {
       try {
+        console.log('Getting initial session...');
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -65,11 +68,16 @@ export const AuthProvider = ({ children }) => {
           
           setSession(data.session);
           setUser(safeUserData);
+          console.log('User authenticated:', safeUserData.email);
+        } else {
+          console.log('No active session found');
+          setUser(null);
         }
       } catch (err) {
         console.error('Error in getInitialSession:', err);
       } finally {
         setLoading(false);
+        console.log('Initial auth loading complete');
       }
     };
 
@@ -97,7 +105,9 @@ export const AuthProvider = ({ children }) => {
           
           setSession(newSession);
           setUser(safeUserData);
+          console.log('User state updated:', safeUserData.email);
         } else {
+          console.log('User state cleared - no session');
           setSession(null);
           setUser(null);
         }
@@ -114,12 +124,20 @@ export const AuthProvider = ({ children }) => {
     );
 
     return () => {
+      console.log('AuthProvider unmounting, cleaning up listener');
       authListener?.subscription.unsubscribe();
     };
   }, []);
 
+  // Log whenever user or session state changes
+  useEffect(() => {
+    console.log('Auth state updated - User:', user ? 'Authenticated' : 'Not authenticated');
+    console.log('Auth state updated - Session:', session ? 'Active' : 'None');
+  }, [user, session]);
+
   const signOut = async () => {
     try {
+      console.log('Signing out user...');
       setLoading(true);
       await supabase.auth.signOut();
       setUser(null);
@@ -127,6 +145,7 @@ export const AuthProvider = ({ children }) => {
       // Cleanup local storage
       localStorage.removeItem('userEmail');
       localStorage.removeItem('userPhone');
+      console.log('Sign out complete');
     } catch (error) {
       console.error('Error signing out:', error);
     } finally {
@@ -154,6 +173,8 @@ export const AuthProvider = ({ children }) => {
     getUserPublicId,
     isLoggedIn,
   };
+
+  console.log('AuthContext providing value - isAuthenticated:', value.isAuthenticated);
 
   return (
     <AuthContext.Provider value={value}>
