@@ -84,26 +84,16 @@ const Login = () => {
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline', 
-            prompt: 'consent'
-          }
-        }
-      });
+      const { data, error } = await signInWithGoogle();
       
       if (error) throw error;
       
-      // This won't actually show because we're redirecting to Google
-      toast.success('Redirecting to Google authentication...', {
+      toast.success('Signing in with Google...', {
         position: 'top-center',
         autoClose: 1500
       });
       
-      // No need to navigate - OAuth will handle the redirect
+      // OAuth will handle the redirect to dashboard now
     } catch (error) {
       console.error('Google sign-in error:', error);
       toast.error(`Google sign-in failed: ${error.message || 'Please try again'}`, {
@@ -231,7 +221,7 @@ const Login = () => {
               className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
                 loginMethod === 'email'
                   ? isDark
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-indigo-600 text-white'
                     : 'bg-blue-600 text-white'
                   : isDark
                   ? 'text-gray-300 hover:text-white'
@@ -246,7 +236,7 @@ const Login = () => {
               className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
                 loginMethod === 'phone'
                   ? isDark
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-indigo-600 text-white'
                     : 'bg-blue-600 text-white'
                   : isDark
                   ? 'text-gray-300 hover:text-white'

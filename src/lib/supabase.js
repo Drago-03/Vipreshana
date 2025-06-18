@@ -243,10 +243,20 @@ export const resendOTP = async (phone, method = 'both') => {
 // Google authentication
 export const signInWithGoogle = async () => {
   try {
+    // Use callback URL first, which will handle redirecting to dashboard
+    const redirectUrl = `${window.location.origin}/auth/callback`;
+    
+    console.log('OAuth redirect URL:', redirectUrl);
+    
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/dashboard`,
+        redirectTo: redirectUrl,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent'
+        },
+        skipBrowserRedirect: false // Let Supabase handle the redirect directly
       }
     })
     
@@ -274,6 +284,3 @@ export const signOut = async () => {
 export const getCurrentUser = () => {
   return supabase.auth.getUser()
 }
-
-// Export direct access to Supabase client
-export { supabase }

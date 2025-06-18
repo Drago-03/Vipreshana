@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
   const { theme, toggleTheme } = useTheme();
+  const { isAuthenticated } = useAuth();
   const isDark = theme === 'dark';
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -13,9 +15,18 @@ const Navbar = () => {
         <Link to="/" className="font-extrabold text-2xl tracking-tight bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">Vipreshana</Link>
       </div>
       <div className="hidden md:flex items-center gap-6">
-        <Link to="/dashboard" className="hover:underline">Dashboard</Link>
-        <Link to="/bookings" className="hover:underline">Bookings</Link>
-        <Link to="/user" className="hover:underline">User</Link>
+        {isAuthenticated ? (
+          <>
+            <Link to="/dashboard" className="hover:underline">Dashboard</Link>
+            <Link to="/bookings" className="hover:underline">Bookings</Link>
+            <Link to="/user" className="hover:underline">User</Link>
+          </>
+        ) : (
+          <>
+            <Link to="/login" className="hover:underline">Login</Link>
+            <Link to="/register" className="hover:underline">Register</Link>
+          </>
+        )}
         <Link to="/how-it-works" className="hover:underline">How It Works</Link>
         <Link to="/contact" className="hover:underline">Contact</Link>
       </div>
@@ -49,9 +60,18 @@ const Navbar = () => {
           aria-label="Close menu"
         >&times;</button>
         <nav className="flex flex-col px-8 gap-6 mt-8 text-lg">
-          <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="hover:underline">Dashboard</Link>
-          <Link to="/bookings" onClick={() => setMenuOpen(false)} className="hover:underline">Bookings</Link>
-          <Link to="/user" onClick={() => setMenuOpen(false)} className="hover:underline">User</Link>
+          {isAuthenticated ? (
+            <>
+              <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="hover:underline">Dashboard</Link>
+              <Link to="/bookings" onClick={() => setMenuOpen(false)} className="hover:underline">Bookings</Link>
+              <Link to="/user" onClick={() => setMenuOpen(false)} className="hover:underline">User</Link>
+            </>
+          ) : (
+            <>
+              <Link to="/login" onClick={() => setMenuOpen(false)} className="hover:underline">Login</Link>
+              <Link to="/register" onClick={() => setMenuOpen(false)} className="hover:underline">Register</Link>
+            </>
+          )}
           <Link to="/how-it-works" onClick={() => setMenuOpen(false)} className="hover:underline">How It Works</Link>
           <Link to="/contact" onClick={() => setMenuOpen(false)} className="hover:underline">Contact</Link>
           <button

@@ -17,7 +17,29 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState(null);
   
+  // Function to clean URL of tokens for security
+  const cleanUrlOfTokens = () => {
+    // Check if we have hash or query strings with sensitive data
+    if (
+      (window.location.hash && window.location.hash.includes('access_token')) ||
+      (window.location.search && window.location.search.includes('access_token'))
+    ) {
+      // For auth callback URLs, replace with dashboard directly
+      if (window.location.pathname.includes('/auth/callback')) {
+        window.history.replaceState(null, document.title, '/dashboard');
+        console.log('Auth callback URL replaced with dashboard');
+      } else {
+        // For other URLs, just clean the params/hash
+        window.history.replaceState(null, document.title, window.location.pathname);
+        console.log('URL cleaned of sensitive tokens');
+      }
+    }
+  };
+  
   useEffect(() => {
+    // Clean URL immediately on component mount
+    cleanUrlOfTokens();
+    
     // Get initial session
     const getInitialSession = async () => {
       try {
@@ -30,8 +52,19 @@ export const AuthProvider = ({ children }) => {
         
         if (data?.session) {
           console.log('Found existing session:', data.session.user.email);
+          // Only store minimal user information in state
+          const safeUserData = {
+            id: data.session.user.id,
+            email: data.session.user.email,
+            user_metadata: data.session.user.user_metadata ? {
+              name: data.session.user.user_metadata.name,
+              avatar_url: data.session.user.user_metadata.avatar_url,
+              full_name: data.session.user.user_metadata.full_name,
+            } : {}
+          };
+          
           setSession(data.session);
-          setUser(data.session.user);
+          setUser(safeUserData);
         }
       } catch (err) {
         console.error('Error in getInitialSession:', err);
@@ -47,8 +80,28 @@ export const AuthProvider = ({ children }) => {
       async (event, newSession) => {
         console.log('Auth state changed:', event);
         
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
+        // Clean URL when auth state changes
+        cleanUrlOfTokens();
+        
+        if (newSession?.user) {
+          // Only store minimal user information in state
+          const safeUserData = {
+            id: newSession.user.id,
+            email: newSession.user.email,
+            user_metadata: newSession.user.user_metadata ? {
+              name: newSession.user.user_metadata.name,
+              avatar_url: newSession.user.user_metadata.avatar_url,
+              full_name: newSession.user.user_metadata.full_name,
+            } : {}
+          };
+          
+          setSession(newSession);
+          setUser(safeUserData);
+        } else {
+          setSession(null);
+          setUser(null);
+        }
+        
         setLoading(false);
 
         // Handle specific auth events
@@ -71,7 +124,7 @@ export const AuthProvider = ({ children }) => {
       await supabase.auth.signOut();
       setUser(null);
       setSession(null);
-      // Cleaup local storage
+      // Cleanup local storage
       localStorage.removeItem('userEmail');
       localStorage.removeItem('userPhone');
     } catch (error) {
@@ -81,6 +134,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
   
+  // Safe getter for user public ID (no sensitive info)
+  const getUserPublicId = () => {
+    return user?.id || null;
+  };
+  
+  // Helper function to determine if user is logged in
+  const isLoggedIn = () => {
+    return !!user;
+  };
+  
   // Provide auth context to the app
   const value = {
     user,
@@ -88,6 +151,8 @@ export const AuthProvider = ({ children }) => {
     loading,
     signOut,
     isAuthenticated: !!user,
+    getUserPublicId,
+    isLoggedIn,
   };
 
   return (

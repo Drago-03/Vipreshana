@@ -1,44 +1,80 @@
-import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import User from './components/User';
-import Driver from './components/Driver';
-import Login from './login';
-import Registration from './Registration';
-import Dashboard from './Dashboard';
-import ForgotPassword from './ForgotPassword';
-import Location from './Location';
-import LoginDashboard from './LoginDashboard';
-import Bookings from './Bookings';
-import ResetPassword from './ResetPassword';
-import AdminDashboard from './AdminDashboard';
-import Contact from './Contact';
-import About from './About';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { ThemeProvider } from './context/ThemeContext';
+import Loader from './components/Loader';
 import { AuthProvider } from './context/AuthContext';
+import Dashboard from './Dashboard';
+import About from './About';
+import HowItWorks from './Howitworks';
+import Bookings from './Bookings';
+import LoginDashboard from './LoginDashboard';
+import Contact from './Contact';
+import Registration from './Registration';
+import Login from './login';
+import ForgotPassword from './ForgotPassword';
+import ResetPassword from './ResetPassword';
+import Location from './Location';
+import AdminDashboard from './AdminDashboard';
+import User from './components/User';
+import Driver from './components/Driver';
+
+// Auth security middleware to protect user tokens
+const AuthSecurityHandler = ({ children }) => {
+  useEffect(() => {
+    // This runs on every route change to ensure token security
+    const cleanHashAndTokens = () => {
+      // Check if we have sensitive info in the URL that needs to be cleaned
+      if (window.location.hash && window.location.hash.includes('access_token')) {
+        // Keep track of the path without tokens
+        const cleanPath = window.location.pathname;
+        // Replace URL with a clean version (no hash or query params with tokens)
+        window.history.replaceState(null, document.title, cleanPath);
+        console.log('URL cleaned of sensitive tokens');
+      }
+    };
+    
+    // Clean on initial load
+    cleanHashAndTokens();
+    
+    // Set up listener for location changes
+    const handleLocationChange = () => {
+      cleanHashAndTokens();
+    };
+    
+    // Add event listener for URL changes
+    window.addEventListener('popstate', handleLocationChange);
+    
+    // Clean up event listener
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+    };
+  }, []);
+  
+  return <>{children}</>;
+};
 
 // Auth callback handler component for Supabase OAuth redirects
 const AuthCallback = () => {
-  const navigate = React.useNavigate();
+  const navigate = useNavigate();
+  const location = useLocation();
   
-  React.useEffect(() => {
+  useEffect(() => {
     // The actual auth state is handled by the AuthContext
     // This component just redirects after the callback is processed
     console.log('Auth callback received - processing OAuth redirect');
+    console.log('Current path:', location.pathname);
+    console.log('Has hash:', !!location.hash);
     
-    // Check if we have hash or query parameters indicating auth
-    const hasAuthParams = window.location.hash || window.location.search.includes('access_token');
+    // Clean the URL by replacing the current history state to remove tokens
+    // This handles both /auth/callback and /auth/callback# formats
+    window.history.replaceState(null, document.title, '/dashboard');
     
-    // If auth is successful, redirect to dashboard after a short delay
-    // The delay allows the AuthContext to update first
-    const timer = setTimeout(() => {
-      console.log('Redirecting to dashboard after auth callback');
-      navigate('/dashboard');
-    }, 1500);
-    
-    return () => clearTimeout(timer);
-  }, [navigate]);
+    // Force redirect to dashboard
+    navigate('/dashboard', { replace: true });
+  }, [navigate, location]);
   
   return (
     <div className="flex items-center justify-center h-screen bg-gray-100">
@@ -51,34 +87,62 @@ const AuthCallback = () => {
   );
 };
 
+function AppRoutes() {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/how-it-works" element={<HowItWorks />} />
+        <Route path="/bookings" element={<Bookings />} />
+        <Route path="/dashboard" element={<LoginDashboard />} />
+        <Route path="/login-dashboard" element={<LoginDashboard />} />
+        <Route path="/logindashboard" element={<LoginDashboard />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/register" element={<Registration />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/location" element={<Location />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/user" element={<User />} />
+        <Route path="/driver" element={<Driver />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        {/* Catch-all for auth callbacks with hash fragments */}
+        <Route path="/auth/*" element={<AuthCallback />} />
+      </Routes>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        pauseOnHover
+        draggable
+      />
+    </AnimatePresence>
+  );
+}
+
 function App() {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Set document title explicitly
+    document.title = 'Vipreshana';
+    
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <AuthProvider>
       <ThemeProvider>
         <Router>
-          <Routes>
-            <Route path="/user" element={<User />} />
-            <Route path="/driver" element={<Driver />} />
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/dashboard" element={<LoginDashboard />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/location" element={<Location />} />
-            <Route path="/bookings" element={<Bookings />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/register" element={<Registration />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/logindashboard" element={<LoginDashboard />} />
-            <Route path="/contact" element={<Contact/>} />
-            <Route path="/about" element={<About/>} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-          </Routes>
-          <ToastContainer
-            position="top-right"
-            autoClose={3000}
-            pauseOnHover
-            draggable
-          />
+          <AuthSecurityHandler>
+            {loading ? <Loader /> : <AppRoutes />}
+          </AuthSecurityHandler>
         </Router>
       </ThemeProvider>
     </AuthProvider>
